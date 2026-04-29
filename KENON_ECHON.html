@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KENON | ECHON</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --void: #000000;
+    --ghost: rgba(255,255,255,0.06);
+    --active: rgba(255,255,255,0.18);
+    --line: rgba(255,255,255,0.12);
+    --glow: rgba(180,200,255,0.15);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #050505;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; cursor: crosshair;
+    font-family: 'Space Mono', monospace;
+  }
+
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px; pointer-events: none; z-index: 200; opacity: 0.4;
+  }
+
+  /* ══ PEDALBOARD FRAME ══ */
+  .board {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    background: #080808;
+  }
+
+  .slots {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ══ SLOT ══ */
+  .slot {
+    flex: 1;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 40px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: auto;
+    position: relative;
+  }
+  .slot:last-child { border-right: none; }
+  #chop-slot { flex: 0.7; }
+
+  /* ══ MASTER STRIP ══ */
+  .master {
+    border-top: 1px solid rgba(255,255,255,0.07);
+    background: #060606;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .master-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 28px 0;
+    width: 100%;
+  }
+
+  .bh-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 14px 0 20px 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    width: 100%;
+  }
+
+  .bh-unit {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bh-btn {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s, background 0.4s, box-shadow 0.4s;
+  }
+  .bh-btn.on { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); box-shadow: 0 0 8px 2px rgba(180,200,255,0.1); }
+
+  .bh-knob {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+    cursor: ns-resize; position: relative; touch-action: none; transition: border-color 0.3s;
+  }
+  .bh-knob:hover { border-color: rgba(255,255,255,0.18); }
+
+  .bh-knob-dot {
+    position: absolute; width: 2px; height: 6px;
+    background: rgba(255,255,255,0.35); border-radius: 2px;
+    left: 50%; top: 4px; transform-origin: 50% 10px;
+    transform: translateX(-50%) rotate(0deg); transition: background 0.3s;
+  }
+  .bh-knob:hover .bh-knob-dot { background: rgba(255,255,255,0.7); }
+
+  .m-knob-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .m-knob {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    cursor: ns-resize;
+    position: relative;
+    touch-action: none;
+    transition: border-color 0.3s;
+  }
+  .m-knob:hover { border-color: rgba(255,255,255,0.2); }
+
+  .m-knob-dot {
+    position: absolute;
+    width: 2px; height: 8px;
+    background: rgba(255,255,255,0.45);
+    border-radius: 2px;
+    left: 50%; top: 5px;
+    transform-origin: 50% 15px;
+    transform: translateX(-50%) rotate(0deg);
+    transition: background 0.3s;
+  }
+  .m-knob:hover .m-knob-dot { background: rgba(255,255,255,0.8); }
+
+  .m-label {
+    font-size: 7px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.14);
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .slot-label {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.07);
+    font-family: 'Space Mono', monospace;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  /* ══ KENON STYLES ══ */
+  .k-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 44px;
+  }
+
+  .orb {
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--ghost);
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.6s ease, background 0.6s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .orb::after {
+    content: ''; position: absolute; inset: -8px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.6s ease;
+  }
+  .orb.on { border-color: rgba(255,255,255,0.3); background: var(--active); animation: k-pulse 3s ease-in-out infinite; }
+  .orb.on::after { opacity: 1; }
+  @keyframes k-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.1); }
+    50%       { box-shadow: 0 0 24px 6px rgba(180,200,255,0.12); }
+  }
+
+  .k-buttons { display: flex; gap: 56px; align-items: center; }
+
+  .k-sliders { display: flex; gap: 80px; align-items: center; }
+
+  .k-slider-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    height: 180px; justify-content: center;
+  }
+
+  input[type=range].vslider {
+    -webkit-appearance: none; appearance: none;
+    writing-mode: vertical-lr; direction: rtl;
+    width: 32px; height: 120px;
+    background: transparent; cursor: ns-resize; outline: none;
+  }
+  input[type=range].vslider::-webkit-slider-runnable-track { width: 3px; background: var(--line); border-radius: 2px; }
+  input[type=range].vslider::-moz-range-track { width: 3px; background: var(--line); border-radius: 2px; }
+  input[type=range].vslider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(255,255,255,0.55); border: none; margin-left: -6px; transition: background 0.3s;
+  }
+  input[type=range].vslider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.55); border: none; }
+  input[type=range].vslider:hover::-webkit-slider-thumb { background: rgba(255,255,255,0.9); }
+
+  .k-indicator {
+    width: 2px; height: 2px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); margin-top: 16px; transition: all 0.6s ease;
+  }
+
+  .k-rule {
+    width: 160px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  }
+
+  .k-fx-row { display: flex; gap: 32px; align-items: center; justify-content: center; }
+
+  .fx-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.5s ease, background 0.5s ease, box-shadow 0.5s ease;
+    position: relative; flex-shrink: 0;
+  }
+  .fx-btn::after {
+    content: ''; position: absolute; inset: -5px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .fx-btn.on { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.1); animation: k-pulse-sm 4s ease-in-out infinite; }
+  .fx-btn.on::after { opacity: 1; }
+  @keyframes k-pulse-sm {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.08); }
+    50%       { box-shadow: 0 0 10px 2px rgba(180,200,255,0.1); }
+  }
+
+  .slider-btn {
+    width: 11px; height: 11px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+    margin-top: 10px; flex-shrink: 0;
+  }
+  .slider-btn.on { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.12); box-shadow: 0 0 8px 2px rgba(180,200,255,0.1); }
+
+  /* ══ ECHON STYLES ══ */
+  .e-panel { position: relative; width: 380px; }
+
+  .e-kill-btn {
+    position: absolute; top: 0; left: 0;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .e-kill-btn:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.07); }
+
+  .e-arc-tier { position: relative; width: 380px; height: 220px; margin-top: 32px; }
+
+  .drone-rect {
+    position: absolute; width: 34px; height: 50px; border-radius: 4px;
+    border: 1px solid var(--line); background: var(--ghost);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.6s ease, background 0.6s ease;
+  }
+  .drone-rect::after {
+    content: ''; position: absolute; inset: -8px; border-radius: 6px;
+    background: radial-gradient(ellipse, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.6s ease;
+  }
+  .drone-rect.on { border-color: rgba(255,255,255,0.3); background: var(--active); animation: e-pulse-rect 3s ease-in-out infinite; }
+  .drone-rect.on::after { opacity: 1; }
+  @keyframes e-pulse-rect {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.08); }
+    50%       { box-shadow: 0 0 18px 4px rgba(180,200,255,0.12); }
+  }
+
+  .drone-lock {
+    position: absolute; width: 9px; height: 9px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+    padding: 8px;
+    background-clip: content-box;
+  }
+  .drone-lock.on { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); box-shadow: 0 0 6px 1px rgba(180,200,255,0.12); }
+
+  .e-rule {
+    width: 380px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+    margin: 40px 0;
+  }
+
+  .e-knob-tier { display: flex; justify-content: space-between; width: 380px; padding: 0 16px; }
+  .e-knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  .e-knob {
+    width: 49px; height: 49px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--ghost);
+    cursor: ns-resize; position: relative; touch-action: none; transition: border-color 0.3s;
+  }
+  .e-knob:hover { border-color: rgba(255,255,255,0.22); }
+
+  .e-knob-dot {
+    position: absolute; width: 2px; height: 10px;
+    background: rgba(255,255,255,0.5); border-radius: 2px;
+    left: 50%; top: 7px; transform-origin: 50% 18px;
+    transform: translateX(-50%) rotate(0deg); transition: background 0.3s;
+  }
+  .e-knob:hover .e-knob-dot { background: rgba(255,255,255,0.85); }
+  .e-knob-label { font-size: 7px; letter-spacing: 0.18em; color: rgba(255,255,255,0.16); text-transform: uppercase; text-align: center; }
+
+  .e-switch-tier { display: flex; justify-content: center; gap: 80px; width: 380px; }
+  .e-switch-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  .e-switch {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.5s ease, background 0.5s ease, box-shadow 0.5s ease;
+    position: relative;
+  }
+  .e-switch::after {
+    content: ''; position: absolute; inset: -5px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .e-switch.on { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.1); animation: e-pulse-sm 4s ease-in-out infinite; }
+  .e-switch.on::after { opacity: 1; }
+  @keyframes e-pulse-sm {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.08); }
+    50%       { box-shadow: 0 0 10px 2px rgba(180,200,255,0.1); }
+  }
+  .e-switch-label { font-size: 7px; letter-spacing: 0.18em; color: rgba(255,255,255,0.16); text-transform: uppercase; text-align: center; }
+  /* ══ CHOPPER STYLES ══ */
+  .chop-master-col {
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .chop-panel {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 32px; width: 240px;
+  }
+  .chop-unit { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+  .chop-tag { font-size: 7px; letter-spacing: 0.25em; color: rgba(255,255,255,0.12); text-transform: uppercase; }
+  .chop-toggle {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s, background 0.4s; position: relative;
+  }
+  .chop-toggle::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .chop-toggle.on { border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.1); animation: chop-pulse 2s ease-in-out infinite; }
+  .chop-toggle.on::after { opacity: 1; }
+  @keyframes chop-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.08); }
+    50% { box-shadow: 0 0 12px 3px rgba(180,200,255,0.13); }
+  }
+  /* levers */
+  .chop-levers { display: flex; gap: 14px; align-items: flex-end; justify-content: center; }
+  .chop-lever-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .chop-lever-label { font-size: 7px; letter-spacing: 0.12em; color: rgba(255,255,255,0.1); text-transform: uppercase; text-align: center; }
+  .chop-lever {
+    width: 24px; height: 120px;
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 3px;
+    background: rgba(255,255,255,0.02);
+    position: relative; cursor: pointer; user-select: none;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 4px 0;
+  }
+  .chop-lever-notch {
+    width: 100%; height: 3px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .chop-lever-notch::before {
+    content: ''; display: block;
+    width: 8px; height: 1px;
+    background: rgba(255,255,255,0.12); border-radius: 1px;
+  }
+  .chop-lever-thumb {
+    position: absolute; left: -1px; right: -1px;
+    height: 20px; border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    transition: top 0.1s cubic-bezier(0.25,0.46,0.45,0.94), background 0.2s;
+    cursor: grab;
+  }
+  .chop-lever-thumb:active { cursor: grabbing; }
+  .chop-lever.active .chop-lever-thumb {
+    border-color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.15);
+  }
+  .chop-divider { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
+  .chop-rand {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .chop-rand:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.07); }
+  .chop-rand:active { background: rgba(255,255,255,0.14); }
+
+  /* ══ RECORD BUTTON ══ */
+  .rec-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .rec-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s, background 0.4s, box-shadow 0.4s;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .rec-btn:hover { border-color: rgba(255,255,255,0.2); }
+  .rec-pip {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .rec-btn.armed .rec-pip {
+    background: rgba(200,60,60,0.9);
+    box-shadow: 0 0 8px 2px rgba(200,60,60,0.4);
+    animation: rec-blink 1.2s ease-in-out infinite;
+  }
+  .rec-btn.armed {
+    border-color: rgba(200,60,60,0.4);
+  }
+  @keyframes rec-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .rec-time {
+    font-size: 9px; letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.0); font-variant-numeric: tabular-nums;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.4s;
+    height: 12px;
+  }
+  .rec-time.visible { color: rgba(200,60,60,0.6); }
+
+  /* ══ VOICE BANK SELECTOR ══ */
+  .voice-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0 4px 0;
+    background: #050505;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .voice-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.5s ease, background 0.5s ease, box-shadow 0.5s ease;
+    position: relative; display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 8px; letter-spacing: 0.05em;
+    color: rgba(255,255,255,0.12);
+  }
+  .voice-btn::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .voice-btn.active {
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.45);
+    animation: voice-glow 4s ease-in-out infinite;
+  }
+  .voice-btn.active::after { opacity: 1; }
+  @keyframes voice-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(180,200,255,0.06); }
+    50%       { box-shadow: 0 0 12px 3px rgba(180,200,255,0.1); }
+  }
+  .voice-label {
+    font-size: 7px;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.09);
+    text-transform: uppercase;
+    text-align: center;
+    padding-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="board" id="board">
+  <!-- VOICE BANK SELECTOR -->
+  <div class="voice-strip">
+    <div class="voice-label">voice</div>
+    <button class="voice-btn active" id="vb-0" onclick="switchVoice(0)">I</button>
+    <button class="voice-btn" id="vb-1" onclick="switchVoice(1)">II</button>
+    <button class="voice-btn" id="vb-2" onclick="switchVoice(2)">III</button>
+    <button class="voice-btn" id="vb-3" onclick="switchVoice(3)">IV</button>
+    <button class="voice-btn" id="vb-4" onclick="switchVoice(4)">V</button>
+  </div>
+  <div class="slots">
+
+    <!-- SLOT LEFT: Kenon -->
+    <div class="slot">
+      <div class="slot-label">Κενόν</div>
+      <div class="k-container" id="k-main-container">
+
+        <button class="orb" id="b-master" onclick="kToggleMaster()" style="width:36px;height:36px;border-color:rgba(255,255,255,0.07);"></button>
+
+        <div class="k-buttons">
+          <button class="orb" style="width:64px;height:64px;" id="b0" onclick="kToggleLayer(0)"></button>
+          <button class="orb" style="width:64px;height:64px;" id="b1" onclick="kToggleLayer(1)"></button>
+          <button class="orb" style="width:64px;height:64px;" id="b2" onclick="kToggleLayer(2)"></button>
+        </div>
+
+        <div class="k-sliders">
+          <div class="k-slider-wrap">
+            <input type="range" class="vslider" id="s0" min="0" max="100" value="40" oninput="kOnSlider(0,this.value)">
+            <div class="k-indicator" id="i0"></div>
+            <button class="slider-btn" id="zero-btn-0" onclick="kZeroSlider(0)"></button>
+          </div>
+          <div class="k-slider-wrap" id="sw1">
+            <input type="range" class="vslider" id="s1" min="0" max="100" value="55" oninput="kOnSlider(1,this.value)">
+            <button class="slider-btn" id="drop-btn" onclick="kToggleDrop()"></button>
+            <button class="slider-btn" id="step-btn" onclick="kToggleStep()"></button>
+          </div>
+          <div class="k-slider-wrap">
+            <input type="range" class="vslider" id="s2" min="0" max="100" value="30" oninput="kOnSlider(2,this.value)">
+            <div class="k-indicator" id="i2"></div>
+            <button class="slider-btn" id="zero-btn-2" onclick="kZeroSlider(2)"></button>
+          </div>
+        </div>
+
+        <div class="k-rule"></div>
+
+        <div class="k-fx-row">
+          <button class="fx-btn" id="fx-plate" onclick="kTogglePlate()"></button>
+          <button class="fx-btn" id="fx-delay" onclick="kToggleDelay()"></button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SLOT MIDDLE: Chopper -->
+    <div class="slot" id="chop-slot">
+      <div class="chop-master-col">
+        <div class="m-knob-wrap">
+          <div class="m-knob" id="mk-vol" data-param="vol" data-val="0.75">
+            <div class="m-knob-dot" id="mkd-vol"></div>
+          </div>
+          <div class="m-label">master vol</div>
+        </div>
+        <div class="m-knob-wrap">
+          <div class="m-knob" id="mk-rev" data-param="rev" data-val="0.0">
+            <div class="m-knob-dot" id="mkd-rev"></div>
+          </div>
+          <div class="m-label">master reverb</div>
+        </div>
+        <div class="rec-wrap">
+          <button class="rec-btn" id="rec-btn" onclick="recToggle()"><div class="rec-pip" id="rec-pip"></div></button>
+          <div class="rec-time" id="rec-time">0:00</div>
+          <div class="m-label">rec</div>
+        </div>
+      </div>
+      <div class="chop-panel">
+
+        <div class="chop-unit" id="chop-k">
+          <div class="chop-tag">kenon</div>
+          <button class="chop-toggle" id="chop-k-btn" onclick="chopToggle('k')"></button>
+          <div class="chop-levers">
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-k-div" data-unit="k" data-lev="div">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-k-div-thumb"></div>
+              </div>
+              <div class="chop-lever-label">div</div>
+            </div>
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-k-skip" data-unit="k" data-lev="skip">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-k-skip-thumb"></div>
+              </div>
+              <div class="chop-lever-label">skip</div>
+            </div>
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-k-fold" data-unit="k" data-lev="fold">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-k-fold-thumb"></div>
+              </div>
+              <div class="chop-lever-label">fold</div>
+            </div>
+          </div>
+          <button class="chop-rand" id="chop-rand-k" onclick="chopRandomize('k')"></button>
+        </div>
+
+        <div class="chop-divider"></div>
+
+        <div class="chop-unit" id="chop-e">
+          <div class="chop-tag">echon</div>
+          <button class="chop-toggle" id="chop-e-btn" onclick="chopToggle('e')"></button>
+          <div class="chop-levers">
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-e-div" data-unit="e" data-lev="div">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-e-div-thumb"></div>
+              </div>
+              <div class="chop-lever-label">div</div>
+            </div>
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-e-skip" data-unit="e" data-lev="skip">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-e-skip-thumb"></div>
+              </div>
+              <div class="chop-lever-label">skip</div>
+            </div>
+            <div class="chop-lever-wrap">
+              <div class="chop-lever" id="lev-e-fold" data-unit="e" data-lev="fold">
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-notch"></div>
+                <div class="chop-lever-thumb" id="lev-e-fold-thumb"></div>
+              </div>
+              <div class="chop-lever-label">fold</div>
+            </div>
+          </div>
+          <button class="chop-rand" id="chop-rand-e" onclick="chopRandomize('e')"></button>
+        </div>
+
+      </div>
+    </div>
+    <div class="slot">
+      <div class="slot-label">Ἠχών</div>
+      <div class="e-panel" id="e-main-container">
+        <button class="e-kill-btn" id="e-btn-kill" onclick="eKillAll()"></button>
+        <div class="e-arc-tier" id="e-arc"></div>
+        <div class="e-rule"></div>
+        <div class="e-knob-tier">
+          <div class="e-knob-wrap">
+            <div class="e-knob" id="ek-vol" data-param="vol" data-val="0.7"><div class="e-knob-dot" id="ekd-vol"></div></div>
+            <div class="e-knob-label">vol</div>
+          </div>
+          <div class="e-knob-wrap">
+            <div class="e-knob" id="ek-rev" data-param="rev" data-val="0.4"><div class="e-knob-dot" id="ekd-rev"></div></div>
+            <div class="e-knob-label">reverb</div>
+          </div>
+          <div class="e-knob-wrap">
+            <div class="e-knob" id="ek-tmb" data-param="tmb" data-val="0.3"><div class="e-knob-dot" id="ekd-tmb"></div></div>
+            <div class="e-knob-label">timbre</div>
+          </div>
+          <div class="e-knob-wrap">
+            <div class="e-knob" id="ek-env" data-param="env" data-val="0.35"><div class="e-knob-dot" id="ekd-env"></div></div>
+            <div class="e-knob-label">envelope</div>
+          </div>
+        </div>
+        <div class="e-rule"></div>
+        <div class="e-switch-tier">
+          <div class="e-switch-wrap">
+            <button class="e-switch" id="esw-delay" onclick="eToggleDelay()"></button>
+            <div class="e-switch-label">delay</div>
+          </div>
+          <div class="e-switch-wrap">
+            <button class="e-switch" id="esw-flange" onclick="eToggleFlange()"></button>
+            <div class="e-switch-label">flange</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MASTER STRIP -->
+  <div class="master">
+    <div class="bh-row">
+      <div class="bh-unit">
+        <button class="bh-btn" id="bh-btn-k" onclick="bhToggle('k')"></button>
+        <div class="bh-knob" id="bh-knob-k" data-bus="k" data-val="0.8"><div class="bh-knob-dot" id="bh-knob-dot-k"></div></div>
+        <div class="m-label">K → BH</div>
+      </div>
+      <div class="bh-unit">
+        <button class="bh-btn" id="bh-btn-e" onclick="bhToggle('e')"></button>
+        <div class="bh-knob" id="bh-knob-e" data-bus="e" data-val="0.8"><div class="bh-knob-dot" id="bh-knob-dot-e"></div></div>
+        <div class="m-label">E → BH</div>
+      </div>
+      <div class="bh-unit">
+        <button class="bh-btn" id="bh-btn-m" onclick="bhToggle('m')"></button>
+        <div class="bh-knob" id="bh-knob-m" data-bus="m" data-val="0.8"><div class="bh-knob-dot" id="bh-knob-dot-m"></div></div>
+        <div class="m-label">M → BH</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  RECORDING WORD LIST
+// ════════════════════════════════════════════════════════════
+const REC_WORDS = [
+  // fuels & raw materials
+  'lead','oil','coal','gasoline','tar','resin','sap','sulfur','brimstone',
+  'silt','clay','loam','tallow','woad','potash','saltpeter','oakum','tinder',
+  // minerals & ores
+  'flint','obsidian','quartz','mica','chalk','amber','tin','mercury','iron',
+  'copper','bronze','basalt','granite','schist','shale','gneiss','pumice',
+  'feldspar','gypsum','talc','pyrite','galena','malachite','cinnabar',
+  // metals & alloys
+  'pewter','nickel','cobalt','chromium','tungsten','manganese','titanium',
+  'antimony','bismuth','germanium','indium','gallium',
+  // elements
+  'argon','xenon','krypton','neon','radon','cesium','barium','iridium',
+  'osmium','palladium','rhodium','niobium','tantalum','hafnium','vanadium',
+  // reptiles
+  'gecko','cobra','viper','mamba','iguana','skink','tuatara','tortoise',
+  'caiman','monitor','chameleon','adder','python','boa','krait',
+  // birds
+  'crane','heron','raven','swift','finch','wren','kite','lark','ibis',
+  'stork','shrike','egret','snipe','plover','cormorant','tern','petrel',
+  'gannet','osprey','curlew','rail','bittern','godwit','dotterel',
+  'merlin','kestrel','harrier','falcon',
+  // mammals
+  'bison','marten','stoat','vole','hare','badger','otter','lynx','ibex',
+  'wolverine','polecat','weasel','ferret','mink','sable','ermine','chamois',
+  // insects
+  'beetle','moth','wasp','hornet','mantis','cricket','locust','aphid',
+  'weevil','earwig','mayfly','damselfly','firefly','cicada','katydid','lacewing',
+  // fungi
+  'spore','truffle','morel','chanterelle','porcini','bracket','agaric','boletus',
+  // geological formations & landforms
+  'gorge','fjord','mesa','ridge','dune','delta','shoal','scarp','karst',
+  'moraine','drumlin','caldera','tarn','fen','moor','heath','steppe',
+  'tundra','loess','bight','bluff','talus','tor','crag','scree',
+  'atoll','isthmus','promontory','headland','spit','lagoon','oxbow',
+  'meander','escarpment','col','cirque',
+  // weather & atmosphere
+  'fog','frost','hail','sleet','gale','squall','nimbus','cirrus',
+  'cumulus','stratus','miasma','doldrums',
+  // trees & plants
+  'cedar','alder','birch','yew','hazel','briar','sedge','rush','moss',
+  'fern','ash','elm','willow','juniper','lichen','sorrel','nettle',
+  'bracken','gorse','hawthorn','blackthorn','rowan','beech','hornbeam',
+  'sycamore','walnut','chestnut','mulberry',
+  // celestial & astronomical
+  'corona','umbra','zenith','nadir','solstice','equinox','perihelion',
+  'apogee','ecliptic','meridian',
+  // card suits
+  'hearts','diamonds','clubs','spades',
+  // cutlery & kitchen
+  'knife','fork','spoon','ladle','spatula','tongs','whisk','skewer',
+  'cleaver','grater','colander',
+  // stoneworking tools
+  'chisel','mallet','bolster','drove','scutch','pitching','punch',
+  'wedge','feather','pitcher','dummy',
+  // smithing tools
+  'anvil','bellows','crucible','mandrel','swage','fuller','hardy','pritchel',
+  // woodworking tools
+  'adze','froe','plane','rasp','gouge','awl','gimlet','auger','bradawl',
+  // fabrics & textiles
+  'linen','wool','silk','cotton','velvet','tweed','muslin','burlap',
+  'cambric','damask','gauze','taffeta','serge','flannel','canvas','satin',
+  // sewing & weaving
+  'thimble','bobbin','bobbin','spindle','distaff','shuttle','selvage',
+  'warp','weft','treadle','heddle',
+  // architectural elements
+  'arch','vault','corbel','lintel','finial','keystone','buttress','spandrel',
+  'parapet','baluster','cornice','frieze','pediment','plinth','pilaster',
+  // nautical
+  'keel','helm','mast','halyard','cleat','batten','boom','bilge',
+  'capstan','bollard','transom','gunwale','hawser',
+  // mythological creatures
+  'sphinx','hydra','gryphon','chimera','basilisk','manticore',
+  'banshee','selkie','kelpie','wyvern','lamia','harpy',
+  // cooking
+  'braise','poach','simmer','sear','blanch','broil','render','deglaze',
+  // percussion
+  'tabor','timbrel','djembe','marimba','glockenspiel','cymbal','snare','tambourine',
+  // craft & construction
+  'wattle','daub','thatch','wicker',
+];
+
+// ════════════════════════════════════════════════════════════
+//  SHARED AUDIO CONTEXT + MASTER BUS
+// ════════════════════════════════════════════════════════════
+let ctx = null;
+let boardGain, boardReverb, boardReverbWet, boardDry;
+let boardStreamDest; // for recording
+// BH tap nodes — one per bus, connected when engines start
+let kBHTapGain = null, eBHTapGain = null, mBHTapGain = null;
+let kBHDest = null, eBHDest = null, mBHDest = null;
+
+function ensureCtx() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    buildBoardBus();
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+}
+
+function buildBoardBus() {
+  boardGain = ctx.createGain();
+  boardGain.gain.value = 0.75;
+
+  boardDry = ctx.createGain();
+  boardDry.gain.value = 1.0;
+
+  boardReverb = ctx.createConvolver();
+  boardReverb.buffer = makeIR(6, 1.8);
+
+  boardReverbWet = ctx.createGain();
+  boardReverbWet.gain.value = 0.0;
+
+  // recording tap — mirrors destination
+  boardStreamDest = ctx.createMediaStreamDestination();
+
+  // BH tap nodes created here so streams exist before bhInit is called;
+  // K and E taps are connected in kStartEngine / eBuildGraph
+  kBHTapGain = ctx.createGain(); kBHTapGain.gain.value = 0;
+  eBHTapGain = ctx.createGain(); eBHTapGain.gain.value = 0;
+  mBHTapGain = ctx.createGain(); mBHTapGain.gain.value = 0;
+  kBHDest = ctx.createMediaStreamDestination();
+  eBHDest = ctx.createMediaStreamDestination();
+  mBHDest = ctx.createMediaStreamDestination();
+
+  boardGain.connect(boardDry);
+  boardGain.connect(boardReverb);
+  boardReverb.connect(boardReverbWet);
+  boardDry.connect(ctx.destination);
+  boardReverbWet.connect(ctx.destination);
+  // parallel connection for recording
+  boardDry.connect(boardStreamDest);
+  boardReverbWet.connect(boardStreamDest);
+  // master BH tap off boardGain (pre dry/wet split, includes everything)
+  boardGain.connect(mBHTapGain);
+  mBHTapGain.connect(mBHDest);
+}
+
+// ════════════════════════════════════════════════════════════
+//  VOICE BANK SYSTEM
+// ════════════════════════════════════════════════════════════
+const VOICE_BANKS = [
+  {
+    name: 'Λύρα',       // Lyre
+    kRoot: 55,           // A1
+    kWaveform: 'sawtooth',
+    kIntervals: [1, 1.5, 2, 2.5, 3],     // layer1 shimmer ratios
+    kFilterBase: 3200,
+    kGain: 1.0,          // reference level
+    kDetunes: [-8, 0, 8, 15],             // layer0 detune spread
+    kSubOctave: 0.5,                      // layer2 pitch multiplier
+    eDrones: [
+      { name:'A2',  freq:110.00 }, { name:'E3',  freq:164.81 },
+      { name:'A3',  freq:220.00 }, { name:'C4',  freq:261.63 },
+      { name:'G3',  freq:196.00 }, { name:'D4',  freq:293.66 },
+    ],
+  },
+  {
+    name: 'Νέφος',      // Cloud — darker, lower, Cm with triangle
+    kRoot: 65.41,        // C2
+    kWaveform: 'sawtooth',
+    kIntervals: [1, 1.2, 1.5, 2, 2.4],
+    kFilterBase: 1800,
+    kGain: 1.25,         // low filter cuts highs, boost to match I
+    kDetunes: [-12, -3, 3, 12],
+    kSubOctave: 0.5,
+    eDrones: [
+      { name:'C3',  freq:130.81 }, { name:'Eb3', freq:155.56 },
+      { name:'G3',  freq:196.00 }, { name:'Bb3', freq:233.08 },
+      { name:'C4',  freq:261.63 }, { name:'F3',  freq:174.61 },
+    ],
+  },
+  {
+    name: 'Φῶς',        // Light — bright major, open fifths
+    kRoot: 73.42,        // D2
+    kWaveform: 'sawtooth',
+    kIntervals: [1, 1.5, 2, 3, 4],
+    kFilterBase: 5500,
+    kGain: 0.72,         // wide-open filter, cut to match I
+    kDetunes: [-5, 0, 5, 7],
+    kSubOctave: 0.5,
+    eDrones: [
+      { name:'D3',  freq:146.83 }, { name:'A3',  freq:220.00 },
+      { name:'D4',  freq:293.66 }, { name:'F#4', freq:369.99 },
+      { name:'A4',  freq:440.00 }, { name:'E4',  freq:329.63 },
+    ],
+  },
+  {
+    name: 'Σκιά',       // Shadow — dissonant, tense, tritones and minor 2nds
+    kRoot: 61.74,        // B1
+    kWaveform: 'sawtooth',
+    kIntervals: [1, 1.06, 1.414, 1.89, 2.67],
+    kFilterBase: 2400,
+    kGain: 1.0,
+    kDetunes: [-15, -2, 6, 18],
+    kSubOctave: 0.5,
+    eDrones: [
+      { name:'B2',  freq:123.47 }, { name:'C3',  freq:130.81 },
+      { name:'F3',  freq:174.61 }, { name:'Bb3', freq:233.08 },
+      { name:'E3',  freq:164.81 }, { name:'F4',  freq:349.23 },
+    ],
+  },
+  {
+    name: 'Κενό',       // Void — sparse, pure fifths and octaves, sine only
+    kRoot: 55,           // A1
+    kWaveform: 'sine',
+    kIntervals: [1, 1.5, 2, 3, 4],
+    kFilterBase: 8000,
+    kGain: 1.0,
+    kDetunes: [0, 0.1, -0.1, 0.2],
+    kSubOctave: 0.5,
+    eDrones: [
+      { name:'A2',  freq:110.00 }, { name:'E3',  freq:164.81 },
+      { name:'A3',  freq:220.00 }, { name:'E4',  freq:329.63 },
+      { name:'A4',  freq:440.00 }, { name:'D3',  freq:146.83 },
+    ],
+  },
+];
+
+let currentVoice = 0;
+
+function switchVoice(idx) {
+  if (idx === currentVoice) return;
+  const oldIdx = currentVoice;
+  currentVoice = idx;
+
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('vb-' + i).classList.toggle('active', i === idx);
+  }
+
+  const v = VOICE_BANKS[idx];
+
+  // ── Gracefully transition Kenon ──
+  const wasOn = [kLayerOn[0], kLayerOn[1], kLayerOn[2]];
+  [0, 1, 2].forEach(i => {
+    if (kLayerOn[i]) {
+      kLayerOn[i] = false;
+      document.getElementById('b' + i).classList.remove('on');
+      if (kLayers[i]) {
+        const dying = kLayers[i];
+        kLayers[i] = null;
+        fadeOutAndStop(dying.gain, 0.8, dying.oscs);
+      }
+    }
+  });
+  kSyncMaster();
+
+  // Delay filter + gain transition until old layers have faded out (0.9s)
+  // so dying oscillators don't get coloured by the new voice's settings
+  setTimeout(() => {
+    if (kMasterFilter) {
+      kMasterFilter.frequency.linearRampToValueAtTime(
+        400 + (kSliders[2] / 100) * (v.kFilterBase + 4400), // same formula as kUpdateFilter
+        ctx.currentTime + 0.6
+      );
+    }
+    if (kMasterGain) {
+      kMasterGain.gain.linearRampToValueAtTime(0.72 * v.kGain, ctx.currentTime + 0.6);
+    }
+  }, 900);
+
+  if (wasOn.some(v => v)) {
+    setTimeout(() => {
+      wasOn.forEach((on, i) => {
+        if (on) kToggleLayer(i);
+      });
+    }, 900);
+  }
+
+  // ── Gracefully transition Echon ──
+  // Kill all active drones, rebuild arc with new frequencies
+  eKillAll();
+
+  const arc = document.getElementById('e-arc');
+  arc.innerHTML = '';
+  eBuildArc();
+}
+
+// Helper: get current voice bank
+function getVoice() { return VOICE_BANKS[currentVoice]; }
+
+// ── Recording ────────────────────────────────────────────────
+let recorder = null;
+let recChunks = [];
+let recStartTime = 0;
+let recTimerInterval = null;
+let recDirHandle = null; // persists chosen output folder for the session
+
+function recToggle() {
+  ensureCtx();
+  const btn = document.getElementById('rec-btn');
+  const timeEl = document.getElementById('rec-time');
+
+  if (!recorder || recorder.state === 'inactive') {
+    recChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+        ? 'audio/ogg;codecs=opus'
+        : 'audio/webm';
+    recorder = new MediaRecorder(boardStreamDest.stream, { mimeType });
+    recorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    recorder.onstop = recFinish;
+    recorder.start(200); // collect chunks every 200ms
+    recStartTime = Date.now();
+    btn.classList.add('armed');
+    timeEl.classList.add('visible');
+    recTimerInterval = setInterval(recUpdateTime, 250);
+  } else if (recorder.state === 'recording') {
+    recorder.stop();
+    btn.classList.remove('armed');
+    clearInterval(recTimerInterval);
+    recTimerInterval = null;
+  }
+}
+
+function recUpdateTime() {
+  const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  const timeEl = document.getElementById('rec-time');
+  timeEl.textContent = m + ':' + String(s).padStart(2, '0');
+}
+
+async function recFinish() {
+  const mimeType = recorder.mimeType;
+  const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+  const blob = new Blob(recChunks, { type: mimeType });
+  recChunks = [];
+  const filename = REC_WORDS[Math.floor(Math.random() * REC_WORDS.length)] + '.' + ext;
+
+  if (window.electronFS) {
+    // running in Electron — save directly to ~/Music/KENON/
+    const arrayBuffer = await blob.arrayBuffer();
+    await window.electronFS.saveRecording(filename, arrayBuffer);
+  } else {
+    // fallback for plain browser
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  // fade out timer after a moment
+  setTimeout(() => {
+    const timeEl = document.getElementById('rec-time');
+    timeEl.classList.remove('visible');
+    timeEl.textContent = '0:00';
+  }, 1500);
+}
+
+function makeIR(dur, decay) {
+  const sr = ctx.sampleRate, len = sr * dur;
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, decay);
+  }
+  return buf;
+}
+
+function valToDeg(v) { return -135 + v * 270; }
+
+function fadeOutAndStop(gn, dur, oscs, cb) {
+  gn.gain.cancelScheduledValues(ctx.currentTime);
+  gn.gain.setValueAtTime(gn.gain.value, ctx.currentTime);
+  gn.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+  setTimeout(() => {
+    oscs.forEach(o => { try { o.stop(); } catch(e){} try { o.disconnect(); } catch(e){} });
+    try { gn.disconnect(); } catch(e){}
+    if (cb) cb();
+  }, dur * 1000 + 50);
+}
+
+function makeKnobDragger(selector, getVal, setVal, keyAttr = 'param') {
+  document.querySelectorAll(selector).forEach(knob => {
+    const key = knob.dataset[keyAttr];
+    setVal(key, parseFloat(knob.dataset.val));
+    let startY, startVal;
+    function onMove(e) {
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      setVal(key, Math.max(0, Math.min(1, startVal + (startY - y) / 160)));
+    }
+    function onEnd() {
+      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd);
+    }
+    function onStart(e) {
+      e.preventDefault();
+      startY = e.touches ? e.touches[0].clientY : e.clientY;
+      startVal = getVal(key);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
+    }
+    knob.addEventListener('mousedown', onStart);
+    knob.addEventListener('touchstart', onStart, { passive: false });
+  });
+}
+
+function buildDelayFX(src, dst, { time, feedback, cutoff }) {
+  const del = ctx.createDelay(2.0); del.delayTime.value = time;
+  const fb = ctx.createGain(); fb.gain.value = feedback;
+  const fbF = ctx.createBiquadFilter(); fbF.type = 'lowpass'; fbF.frequency.value = cutoff;
+  const wet = ctx.createGain(); wet.gain.value = 0;
+  src.connect(del); del.connect(fbF); fbF.connect(fb); fb.connect(del); del.connect(wet); wet.connect(dst);
+  return { del, fb, fbF, wet };
+}
+
+// ── Master knob control ──────────────────────────────────────
+const mParams = { vol: 0.75, rev: 0.0 };
+
+function applyMasterKnob(param, val) {
+  mParams[param] = val;
+  const dot = document.getElementById('mkd-' + param);
+  if (dot) dot.style.transform = `translateX(-50%) rotate(${valToDeg(val)}deg)`;
+  if (!ctx) return;
+  if (param === 'vol') boardGain.gain.setTargetAtTime(val, ctx.currentTime, 0.05);
+  if (param === 'rev') {
+    boardReverbWet.gain.setTargetAtTime(val * 0.8, ctx.currentTime, 0.05);
+    boardDry.gain.setTargetAtTime(1 - val * 0.5, ctx.currentTime, 0.05);
+  }
+}
+
+function initMasterKnobs() {
+  makeKnobDragger('.m-knob', p => mParams[p], applyMasterKnob);
+}
+
+// ════════════════════════════════════════════════════════════
+//  KENON ENGINE  (all functions prefixed k, IDs unchanged)
+// ════════════════════════════════════════════════════════════
+const kLayers = [null, null, null];
+const kLayerOn = [false, false, false];
+let kSliders = [40, 55, 30];
+let kMasterGain, kReverb, kMasterFilter;
+
+function kStartEngine() {
+  kMasterGain = ctx.createGain();
+  kMasterGain.gain.value = 0.72 * getVoice().kGain;
+  kReverb = ctx.createConvolver();
+  kReverb.buffer = makeIR(8, 0.5);
+  kMasterFilter = ctx.createBiquadFilter();
+  kMasterFilter.type = 'lowpass';
+  kMasterFilter.frequency.value = getVoice().kFilterBase;
+  kMasterFilter.Q.value = 0.4;
+  kMasterGain.connect(kMasterFilter);
+  kMasterFilter.connect(kReverb);
+  kMasterFilter.connect(boardGain);
+  kReverb.connect(boardGain);
+  // K BH tap: post-filter, pre-reverb — clean dry Kenon signal for Max
+  kMasterFilter.connect(kBHTapGain);
+  kBHTapGain.connect(kBHDest);
+  kUpdateFilter();
+}
+
+function kEnsureCtx() {
+  ensureCtx();
+  if (!kMasterGain) kStartEngine();
+}
+
+function kBuildLayer0() {
+  const root = kPitchHz();
+  const v = getVoice();
+  const g = ctx.createGain(); g.gain.value = 0; g.connect(kMasterGain);
+  const oscs = [];
+  v.kDetunes.forEach(dt => {
+    const o = ctx.createOscillator(); o.type = v.kWaveform; o.frequency.value = root; o.detune.value = dt;
+    const og = ctx.createGain(); og.gain.value = 0.13;
+    o.connect(og); og.connect(g); o.start(); oscs.push(o);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.03 + Math.random()*0.04;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 3;
+    lfo.connect(lfoG); lfoG.connect(o.detune); lfo.start();
+  });
+  kFadeIn(g, 0.7); return { gain: g, oscs };
+}
+
+function kBuildLayer1() {
+  const root = kPitchHz() * 2;
+  const v = getVoice();
+  const g = ctx.createGain(); g.gain.value = 0; g.connect(kMasterGain);
+  const shimmerNodes = [];
+  v.kIntervals.forEach((ratio, i) => {
+    const carrier = ctx.createOscillator(); carrier.type = 'sine'; carrier.frequency.value = root * ratio;
+    const mod = ctx.createOscillator(); mod.frequency.value = 0.07 + i*0.03;
+    const modG = ctx.createGain(); modG.gain.value = root * ratio * 0.015;
+    mod.connect(modG); modG.connect(carrier.frequency);
+    const cg = ctx.createGain(); cg.gain.value = 0.16/(i+1);
+    carrier.connect(cg); cg.connect(g); carrier.start(); mod.start();
+    shimmerNodes.push(carrier, mod);
+  });
+  kFadeIn(g, 1.2); return { gain: g, oscs: shimmerNodes };
+}
+
+function kBuildLayer2() {
+  const v = getVoice();
+  const root = kPitchHz() * v.kSubOctave;
+  const g = ctx.createGain(); g.gain.value = 0; g.connect(kMasterGain);
+  const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = root;
+  const baseGain = ctx.createGain(); baseGain.gain.value = 0.8;
+  const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.06 + (kSliders[0]/100)*0.15;
+  const lfoDepth = ctx.createGain(); lfoDepth.gain.value = 0.25;
+  sub.connect(baseGain); lfo.connect(lfoDepth); lfoDepth.connect(baseGain.gain); baseGain.connect(g);
+  sub.start(); lfo.start(); kFadeIn(g, 1.8); return { gain: g, oscs: [sub, lfo] };
+}
+
+function kPitchHz() { return getVoice().kRoot * Math.pow(4, kSliders[1]/100); }
+function kFadeIn(gn, dur) { gn.gain.cancelScheduledValues(ctx.currentTime); gn.gain.setValueAtTime(0, ctx.currentTime); gn.gain.linearRampToValueAtTime(0.8, ctx.currentTime+dur); }
+
+function kToggleMaster() {
+  kEnsureCtx();
+  const anyOn = kLayerOn.some(v => v);
+  if (anyOn) { [0,1,2].forEach(i => { if (kLayerOn[i]) kToggleLayer(i); }); }
+  else { [0,1,2].forEach(i => kToggleLayer(i)); }
+}
+function kSyncMaster() { document.getElementById('b-master').classList.toggle('on', kLayerOn.every(v=>v)); }
+function kToggleLayer(i) {
+  kEnsureCtx();
+  const btn = document.getElementById('b'+i);
+  if (kLayerOn[i]) {
+    kLayerOn[i] = false; btn.classList.remove('on');
+    if (kLayers[i]) { const dying = kLayers[i]; kLayers[i] = null; fadeOutAndStop(dying.gain, 1.5, dying.oscs); }
+  } else {
+    kLayerOn[i] = true; btn.classList.add('on');
+    kLayers[i] = [kBuildLayer0, kBuildLayer1, kBuildLayer2][i]();
+  }
+  kSyncMaster();
+}
+function kOnSlider(i, val) {
+  kSliders[i] = parseFloat(val); kUpdateIndicator(i);
+  if (!ctx) return;
+  if (i===1) kUpdatePitch(); if (i===2) kUpdateFilter(); if (i===0) kUpdateDensity();
+}
+function kUpdatePitch() {
+  const hz = kPitchHz();
+  const v = getVoice();
+  if (kLayers[0]) kLayers[0].oscs.filter(o=>o.type===v.kWaveform).forEach(o => o.frequency.linearRampToValueAtTime(hz, ctx.currentTime+2));
+  if (kLayers[1]) kLayers[1].oscs.filter(o=>o.frequency.value>1).forEach((o,i) => {
+    // carriers only (mods are sub-Hz); ramp very slowly — layer 1 drifts into the new pitch
+    o.frequency.linearRampToValueAtTime(hz * 2 * (v.kIntervals[i] ?? 1), ctx.currentTime + 18);
+  });
+  if (kLayers[2]) kLayers[2].oscs[0].frequency.linearRampToValueAtTime(hz*v.kSubOctave, ctx.currentTime+2.7);
+}
+function kUpdateFilter() { if (!kMasterFilter) return; const v = getVoice(); kMasterFilter.frequency.linearRampToValueAtTime(400+(kSliders[2]/100)*(v.kFilterBase+4400), ctx.currentTime+0.75); }
+function kUpdateDensity() { if (!kMasterGain) return; kMasterGain.gain.linearRampToValueAtTime(0.05+(kSliders[0]/100)*1.2, ctx.currentTime+2); }
+function kUpdateIndicator(i) {
+  const ind = document.getElementById('i'+i); if (!ind) return;
+  const v = kSliders[i]/100;
+  ind.style.background = `rgba(255,255,255,${0.05+v*0.3})`;
+  ind.style.width = (2+v*4)+'px'; ind.style.height = (2+v*4)+'px'; ind.style.borderRadius = '50%';
+}
+
+let kPlateReverb = null, kPlateOn = false;
+function kMakePlateBuffer() {
+  const sr = ctx.sampleRate, dur = 4.5, len = sr*dur;
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let c=0;c<2;c++) { const d=buf.getChannelData(c); for (let i=0;i<len;i++) { const t=i/sr,env=Math.pow(1-t/dur,1.4),shimmer=Math.sin(i*0.0031+c*1.7)*0.3+Math.sin(i*0.0071+c*0.9)*0.15; d[i]=(Math.random()*2-1)*env*0.85+shimmer*env*0.6; } }
+  return buf;
+}
+function kBuildPlate() {
+  const conv = ctx.createConvolver(); conv.buffer = kMakePlateBuffer();
+  const shelf = ctx.createBiquadFilter(); shelf.type='highshelf'; shelf.frequency.value=2000; shelf.gain.value=10;
+  const preGain = ctx.createGain(); preGain.gain.value=1.8;
+  const wet = ctx.createGain(); wet.gain.value=0;
+  kMasterFilter.connect(preGain); preGain.connect(shelf); shelf.connect(conv); conv.connect(wet); wet.connect(boardGain);
+  return { conv, shelf, wet, preGain };
+}
+function kTogglePlate() {
+  kEnsureCtx(); kPlateOn = !kPlateOn;
+  document.getElementById('fx-plate').classList.toggle('on', kPlateOn);
+  if (kPlateOn) { if (!kPlateReverb) kPlateReverb = kBuildPlate(); kPlateReverb.wet.gain.setTargetAtTime(0.9, ctx.currentTime, 0.3); }
+  else { if (kPlateReverb) kPlateReverb.wet.gain.setTargetAtTime(0, ctx.currentTime, 0.4); }
+}
+
+let kDelayNode = null, kDelayOn = false;
+function kBuildDelay() {
+  return buildDelayFX(kMasterFilter, boardGain, { time: 0.72, feedback: 0.22, cutoff: 1800 });
+}
+function kToggleDelay() {
+  kEnsureCtx(); kDelayOn = !kDelayOn;
+  document.getElementById('fx-delay').classList.toggle('on', kDelayOn);
+  if (kDelayOn) { if (!kDelayNode) kDelayNode = kBuildDelay(); kDelayNode.wet.gain.setTargetAtTime(0.7, ctx.currentTime, 0.15); }
+  else { if (kDelayNode) kDelayNode.wet.gain.setTargetAtTime(0, ctx.currentTime, 0.3); }
+}
+
+const kZeroAnimIds = {};
+function kZeroSlider(i) {
+  const slider = document.getElementById('s'+i), val = parseFloat(slider.value);
+  if (val <= 0) {
+    const start = performance.now(), duration = 4500;
+    function rise(now) { const t=Math.min((now-start)/duration,1),nv=t*100; slider.value=nv; kOnSlider(i,nv); if(t<1) kZeroAnimIds[i]=requestAnimationFrame(rise); }
+    kZeroAnimIds[i] = requestAnimationFrame(rise);
+  } else {
+    if (kZeroAnimIds[i]) cancelAnimationFrame(kZeroAnimIds[i]);
+    const start=performance.now(),duration=(val/100)*4500,startVal=val;
+    function drop(now) { const t=Math.min((now-start)/duration,1),nv=startVal*(1-t); slider.value=nv; kOnSlider(i,nv); if(t<1) kZeroAnimIds[i]=requestAnimationFrame(drop); }
+    kZeroAnimIds[i] = requestAnimationFrame(drop);
+  }
+}
+let kDropActive=false, kDropAnimId=null;
+function kToggleDrop() {
+  const slider=document.getElementById('s1'),btn=document.getElementById('drop-btn'),val=parseFloat(slider.value);
+  if (kDropActive) { kDropActive=false; btn.classList.remove('on'); if(kDropAnimId){cancelAnimationFrame(kDropAnimId);kDropAnimId=null;} return; }
+  if (val<=0) {
+    kDropActive=true; btn.classList.add('on');
+    const start=performance.now(),duration=600;
+    function rise(now) { if(!kDropActive)return; const t=Math.min((now-start)/duration,1),nv=t*100; slider.value=nv; kOnSlider(1,nv); if(t<1){kDropAnimId=requestAnimationFrame(rise);}else{slider.value=100;kOnSlider(1,100);kDropActive=false;btn.classList.remove('on');kDropAnimId=null;} }
+    kDropAnimId=requestAnimationFrame(rise); return;
+  }
+  kDropActive=true; btn.classList.add('on');
+  const start=performance.now(),duration=val*80,startVal=val;
+  function drop(now) { if(!kDropActive)return; const t=Math.min((now-start)/duration,1),nv=startVal*(1-t); slider.value=nv; kOnSlider(1,nv); if(t<1){kDropAnimId=requestAnimationFrame(drop);}else{slider.value=0;kOnSlider(1,0);kDropActive=false;btn.classList.remove('on');kDropAnimId=null;} }
+  kDropAnimId=requestAnimationFrame(drop);
+}
+let kStepActive=false, kStepTimerId=null;
+function kToggleStep() {
+  const btn=document.getElementById('step-btn');
+  if (kStepActive) { kStepActive=false; btn.classList.remove('on'); if(kStepTimerId){clearTimeout(kStepTimerId);kStepTimerId=null;} return; }
+  kStepActive=true; btn.classList.add('on');
+  const slider=document.getElementById('s1'),stepValues=[0,100/6,200/6,300/6,400/6,500/6,100],stepDuration=2400;
+  let stepIdx=0;
+  function doStep() { if(!kStepActive)return; const val=stepValues[stepIdx]; slider.value=val; kOnSlider(1,val); stepIdx++; if(stepIdx<stepValues.length){kStepTimerId=setTimeout(doStep,stepDuration);}else{kStepActive=false;btn.classList.remove('on');kStepTimerId=null;} }
+  doStep();
+}
+
+// ════════════════════════════════════════════════════════════
+//  ECHON ENGINE  (all functions prefixed e)
+// ════════════════════════════════════════════════════════════
+function getEDrones() { return getVoice().eDrones; }
+const E_ARC_POS = [
+  { x:4, y:68 }, { x:18, y:38 }, { x:33, y:18 },
+  { x:49, y:8 }, { x:64, y:18 }, { x:79, y:38 },
+];
+let eMasterGain, eReverbConv, eReverbWet, eDryGain;
+let eDelayNode=null, eDelayOn=false;
+let eFlangeNode=null, eFlangeOn=false;
+let eDroneNodes={}, eDroneLocked={};
+let eParams = { vol:0.7, rev:0.4, tmb:0.3, env:0.35 };
+
+function eTimbreToFM(t) { return { cRatio:1+t*3, mRatio:1+t*5, index:0.5+t*7.5 }; }
+function eEnvToAR(e) { return { attack:0.02+e*2.98, release:0.3+e*7.7 }; }
+
+function eEnsureCtx() {
+  ensureCtx();
+  if (!eMasterGain) eBuildGraph();
+}
+
+function eBuildGraph() {
+  eMasterGain = ctx.createGain(); eMasterGain.gain.value = eParams.vol;
+  eDryGain = ctx.createGain(); eDryGain.gain.value = 1-eParams.rev;
+  eReverbConv = ctx.createConvolver(); eReverbConv.buffer = makeIR(4, 2.2);
+  eReverbWet = ctx.createGain(); eReverbWet.gain.value = eParams.rev;
+  eMasterGain.connect(eDryGain); eMasterGain.connect(eReverbConv); eReverbConv.connect(eReverbWet);
+  eDryGain.connect(boardGain); eReverbWet.connect(boardGain);
+  // E BH tap: post-master-gain, pre-reverb — clean dry Echon signal for Max
+  eMasterGain.connect(eBHTapGain);
+  eBHTapGain.connect(eBHDest);
+}
+
+function eStartDrone(drone, velocity=0.5) {
+  if (eDroneNodes[drone.name]) return;
+  eEnsureCtx();
+  const fm=eTimbreToFM(eParams.tmb), ar=eEnvToAR(eParams.env);
+  const g=ctx.createGain(); g.gain.value=0; g.connect(eMasterGain);
+  const modFreq=drone.freq*fm.mRatio;
+  const modGain=ctx.createGain(); modGain.gain.value=modFreq*fm.index;
+  const mod=ctx.createOscillator(); mod.type='sine'; mod.frequency.value=modFreq; mod.connect(modGain);
+  const car=ctx.createOscillator(); car.type='sine'; car.frequency.value=drone.freq*fm.cRatio;
+  modGain.connect(car.frequency); car.connect(g);
+  const lfo=ctx.createOscillator(); lfo.frequency.value=0.04+Math.random()*0.06;
+  const lfoG=ctx.createGain(); lfoG.gain.value=drone.freq*0.008;
+  lfo.connect(lfoG); lfoG.connect(car.frequency);
+  mod.start(); car.start(); lfo.start();
+  g.gain.setValueAtTime(0, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(velocity, ctx.currentTime+ar.attack);
+  eDroneNodes[drone.name]={mod,car,lfo,gain:g};
+}
+
+function eStopDrone(drone) {
+  const n=eDroneNodes[drone.name]; if(!n) return;
+  const ar=eEnvToAR(eParams.env);
+  fadeOutAndStop(n.gain, ar.release, [n.mod, n.car, n.lfo]);
+  delete eDroneNodes[drone.name];
+}
+
+function ePressDrone(i) {
+  if (eDroneLocked[i]) {
+    eDroneLocked[i]=false;
+    document.getElementById('elock-'+i).classList.remove('on');
+    eStopDrone(getEDrones()[i]);
+    document.getElementById('edr-'+i).classList.remove('on');
+    return;
+  }
+  const drone=getEDrones()[i], btn=document.getElementById('edr-'+i);
+  if (eDroneNodes[drone.name]) return;
+  eStartDrone(drone, 0.6); btn.classList.add('on');
+}
+
+function eReleaseDrone(i) {
+  if (eDroneLocked[i]) return;
+  eStopDrone(getEDrones()[i]); document.getElementById('edr-'+i).classList.remove('on');
+}
+
+function eToggleLock(i) {
+  const drone=getEDrones()[i], btn=document.getElementById('edr-'+i), lock=document.getElementById('elock-'+i);
+  if (eDroneLocked[i]) { eDroneLocked[i]=false; lock.classList.remove('on'); eStopDrone(drone); btn.classList.remove('on'); }
+  else { eDroneLocked[i]=true; lock.classList.add('on'); if(!eDroneNodes[drone.name]){eStartDrone(drone,0.5);btn.classList.add('on');} }
+}
+
+function eKillAll() {
+  getEDrones().forEach((drone,i) => {
+    eDroneLocked[i]=false;
+    const lock=document.getElementById('elock-'+i), btn=document.getElementById('edr-'+i);
+    if(lock) lock.classList.remove('on'); if(btn) btn.classList.remove('on');
+    eStopDrone(drone);
+  });
+}
+
+function eBuildDelay() {
+  return buildDelayFX(eMasterGain, boardGain, { time: 0.68, feedback: 0.28, cutoff: 2000 });
+}
+
+function eToggleDelay() {
+  eEnsureCtx(); eDelayOn=!eDelayOn;
+  document.getElementById('esw-delay').classList.toggle('on', eDelayOn);
+  if(eDelayOn){if(!eDelayNode)eDelayNode=eBuildDelay();eDelayNode.wet.gain.setTargetAtTime(0.65,ctx.currentTime,0.15);}
+  else{if(eDelayNode)eDelayNode.wet.gain.setTargetAtTime(0,ctx.currentTime,0.3);}
+}
+
+function eBuildFlange() {
+  const input=ctx.createGain(); input.gain.value=1;
+  const del=ctx.createDelay(0.02); del.delayTime.value=0.005;
+  const lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.8;
+  const lfoG=ctx.createGain(); lfoG.gain.value=0.004;
+  lfo.connect(lfoG); lfoG.connect(del.delayTime);
+  const fb=ctx.createGain(); fb.gain.value=0.72;
+  const wet=ctx.createGain(); wet.gain.value=0;
+  eMasterGain.connect(input); input.connect(del); del.connect(fb); fb.connect(del); del.connect(wet); wet.connect(boardGain); lfo.start();
+  return { input, del, lfo, lfoG, fb, wet };
+}
+
+function eToggleFlange() {
+  eEnsureCtx(); eFlangeOn=!eFlangeOn;
+  document.getElementById('esw-flange').classList.toggle('on', eFlangeOn);
+  if(eFlangeOn){if(!eFlangeNode)eFlangeNode=eBuildFlange();eFlangeNode.wet.gain.setTargetAtTime(0.8,ctx.currentTime,0.1);}
+  else{if(eFlangeNode)eFlangeNode.wet.gain.setTargetAtTime(0,ctx.currentTime,0.25);}
+}
+
+function eApplyKnob(param, val) {
+  eParams[param]=val;
+  const dot=document.getElementById('ekd-'+param);
+  if(dot) dot.style.transform=`translateX(-50%) rotate(${valToDeg(val)}deg)`;
+  if(!ctx) return;
+  if(param==='vol'&&eMasterGain) eMasterGain.gain.setTargetAtTime(val,ctx.currentTime,0.05);
+  if(param==='rev'&&eReverbWet){ eReverbWet.gain.setTargetAtTime(val,ctx.currentTime,0.05); eDryGain.gain.setTargetAtTime(1-val,ctx.currentTime,0.05); }
+}
+
+function eInitKnobs() {
+  makeKnobDragger('.e-knob', p => eParams[p], eApplyKnob);
+}
+
+function eBuildArc() {
+  const arc=document.getElementById('e-arc');
+  const W=380,H=220,RECT_W=34,RECT_H=50,LOCK_D=9;
+  getEDrones().forEach((drone,i) => {
+    const pos=E_ARC_POS[i];
+    const lx=(pos.x/100)*W, ty=(pos.y/100)*H;
+    const btn=document.createElement('button');
+    btn.className='drone-rect'; btn.id='edr-'+i;
+    btn.style.left=lx+'px'; btn.style.top=ty+'px';
+    btn.addEventListener('mousedown',e=>{e.preventDefault();ePressDrone(i);});
+    btn.addEventListener('mouseup',()=>eReleaseDrone(i));
+    btn.addEventListener('mouseleave',()=>{if(eDroneNodes[drone.name]&&!eDroneLocked[i])eReleaseDrone(i);});
+    btn.addEventListener('touchstart',e=>{e.preventDefault();ePressDrone(i);},{passive:false});
+    btn.addEventListener('touchend',()=>eReleaseDrone(i));
+    arc.appendChild(btn);
+    const lock=document.createElement('button');
+    lock.className='drone-lock'; lock.id='elock-'+i;
+    lock.style.position='absolute';
+    lock.style.left=(lx+RECT_W/2-LOCK_D/2 - 8)+'px';
+    lock.style.top=(ty+RECT_H+8 - 8+6)+'px';
+    lock.addEventListener('mousedown',e=>e.stopPropagation());
+    lock.addEventListener('click',e=>{e.stopPropagation();eToggleLock(i);});
+    lock.addEventListener('touchstart',e=>{e.stopPropagation();},{passive:false});
+    lock.addEventListener('touchend',e=>{e.stopPropagation();eToggleLock(i);});
+    arc.appendChild(lock);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  CHOPPER ENGINE — lever-based
+// ════════════════════════════════════════════════════════════
+let kChopGain = null, eChopGain = null;
+
+// lever positions: 0..4 (bottom to top)
+// div:  base rate divided by [1,2,3,4,6]
+// skip: every Nth beat is silenced — [1=none, 2,3,4,5,7]
+// fold: sub-chops inside each on-window — [1,2,3,4,5]
+const LEV_POSITIONS = 5;
+const chopState = {
+  k: { on:false, timerId:null, phase:false, beatCount:0, div:0, skip:0, fold:0, gen:0 },
+  e: { on:false, timerId:null, phase:false, beatCount:0, div:1, skip:0, fold:0, gen:0 },
+};
+
+// base rate: ~3Hz — levers shape it from there
+const BASE_HZ = 3.0;
+const DIV_VALUES  = [1, 2, 3, 4, 6];   // divide base rate
+const SKIP_VALUES = [1, 2, 3, 4, 5];   // silence every Nth beat (1=never)
+const FOLD_VALUES = [1, 2, 3, 4, 5];   // sub-chops in on-window
+
+function chopEnsureNodes() {
+  if (!kChopGain && kMasterGain) {
+    kChopGain = ctx.createGain(); kChopGain.gain.value = 1;
+    try { kMasterFilter.disconnect(boardGain); } catch(e) {}
+    try { kReverb.disconnect(boardGain); } catch(e) {}
+    kMasterFilter.connect(kChopGain); kReverb.connect(kChopGain); kChopGain.connect(boardGain);
+    if (kPlateReverb) { try { kPlateReverb.wet.disconnect(boardGain); } catch(e) {} kPlateReverb.wet.connect(kChopGain); }
+    if (kDelayNode)   { try { kDelayNode.wet.disconnect(boardGain); } catch(e) {} kDelayNode.wet.connect(kChopGain); }
+  }
+  if (!eChopGain && eMasterGain) {
+    eChopGain = ctx.createGain(); eChopGain.gain.value = 1;
+    try { eDryGain.disconnect(boardGain); } catch(e) {}
+    try { eReverbWet.disconnect(boardGain); } catch(e) {}
+    eDryGain.connect(eChopGain); eReverbWet.connect(eChopGain); eChopGain.connect(boardGain);
+    if (eDelayNode)  { try { eDelayNode.wet.disconnect(boardGain); } catch(e) {} eDelayNode.wet.connect(eChopGain); }
+    if (eFlangeNode) { try { eFlangeNode.wet.disconnect(boardGain); } catch(e) {} eFlangeNode.wet.connect(eChopGain); }
+  }
+}
+
+function chopRamp(gainNode, target) {
+  const now = ctx.currentTime;
+  gainNode.gain.cancelScheduledValues(now);
+  gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+  gainNode.gain.linearRampToValueAtTime(target, now + 0.025);
+}
+
+function chopTick(unit, gen) {
+  const s = chopState[unit];
+  if (!s.on || gen !== s.gen) return;
+  const gainNode = unit === 'k' ? kChopGain : eChopGain;
+  if (!gainNode) return;
+
+  const hz = BASE_HZ / DIV_VALUES[s.div];
+  const period = 1000 / hz;           // ms per full cycle
+  const onRatio = 0.40;               // 40% on, 60% off — more breathing room
+  const onMs  = period * onRatio;
+  const offMs = period * (1 - onRatio);
+
+  s.beatCount++;
+  const skip = SKIP_VALUES[s.skip];
+  const muted = skip > 1 && (s.beatCount % skip === 0);
+
+  if (muted) {
+    chopRamp(gainNode, 0);
+    s.timerId = setTimeout(() => {
+      if (!s.on || gen !== s.gen) { chopRamp(gainNode, 1); return; }
+      chopRamp(gainNode, 1); chopTick(unit, gen);
+    }, period);
+    return;
+  }
+
+  const folds = FOLD_VALUES[s.fold];
+  if (folds === 1) {
+    // simple on/off
+    chopRamp(gainNode, 1);
+    s.timerId = setTimeout(() => {
+      chopRamp(gainNode, 0);
+      s.timerId = setTimeout(() => chopTick(unit, gen), offMs);
+    }, onMs);
+  } else {
+    // sub-chops: fire folds rapid pulses within onMs window
+    const subPeriod = onMs / folds;
+    const subOn  = subPeriod * 0.35;
+    const subOff = subPeriod * 0.65;
+    let f = 0;
+    function doFold() {
+      if (!s.on || gen !== s.gen) return;
+      chopRamp(gainNode, 1);
+      s.timerId = setTimeout(() => {
+        if (!s.on || gen !== s.gen) { chopRamp(gainNode, 1); return; }
+        chopRamp(gainNode, 0);
+        f++;
+        if (f < folds) s.timerId = setTimeout(doFold, subOff);
+        else s.timerId = setTimeout(() => chopTick(unit, gen), offMs);
+      }, subOn);
+    }
+    doFold();
+  }
+}
+
+// auto-advance timers for skip and fold levers
+const chopAutoTimers = { k: {skip: null, fold: null}, e: {skip: null, fold: null} };
+const chopAutoOn = { k: false, e: false }; // tracks whether auto-advance is enabled per unit
+// skip advances every ~2.3s, fold every ~1.7s — prime-ish so they drift
+const SKIP_ADVANCE_MS = 2300;
+const FOLD_ADVANCE_MS = 1700;
+
+function chopStartAuto(unit) {
+  const s = chopState[unit];
+  chopAutoTimers[unit].skip = setInterval(() => {
+    setLever(unit, 'skip', (s.skip + 1) % LEV_POSITIONS);
+  }, SKIP_ADVANCE_MS);
+  chopAutoTimers[unit].fold = setInterval(() => {
+    setLever(unit, 'fold', (s.fold + 1) % LEV_POSITIONS);
+  }, FOLD_ADVANCE_MS);
+}
+
+function chopStopAuto(unit) {
+  if (chopAutoTimers[unit].skip) { clearInterval(chopAutoTimers[unit].skip); chopAutoTimers[unit].skip = null; }
+  if (chopAutoTimers[unit].fold) { clearInterval(chopAutoTimers[unit].fold); chopAutoTimers[unit].fold = null; }
+}
+
+function chopToggle(unit) {
+  ensureCtx();
+  if (unit === 'k' && !kMasterGain) kStartEngine();
+  if (unit === 'e' && !eMasterGain) eBuildGraph();
+  chopEnsureNodes();
+  const s = chopState[unit];
+  const btn = document.getElementById('chop-' + unit + '-btn');
+  const gainNode = unit === 'k' ? kChopGain : eChopGain;
+  s.on = !s.on;
+  btn.classList.toggle('on', s.on);
+  if (s.on) {
+    s.beatCount = 0; s.phase = false; s.gen++;
+    chopTick(unit, s.gen);
+  } else {
+    s.gen++; // invalidate all in-flight callbacks
+    clearTimeout(s.timerId); s.timerId = null;
+    if (gainNode) chopRamp(gainNode, 1);
+  }
+}
+
+function chopRandomize(unit) {
+  // toggle auto-advance on/off, independent of whether the chopper is running
+  chopAutoOn[unit] = !chopAutoOn[unit];
+  document.getElementById('chop-rand-' + unit).classList.toggle('on', chopAutoOn[unit]);
+  if (chopAutoOn[unit]) chopStartAuto(unit);
+  else chopStopAuto(unit);
+}
+
+// ── Levers ───────────────────────────────────────────────────
+// LEVER_H = inner usable height of lever track in px
+const LEVER_H = 112; // 120px total - 4px padding*2 - 20px thumb / 2 approx
+const LEVER_STEPS = LEV_POSITIONS - 1; // 4 steps between 5 positions
+
+function leverPos(stepIdx) {
+  // stepIdx 0=bottom(slowest/most effect), 4=top(fastest/least)
+  // thumb top within lever: 0=top of track, LEVER_H=bottom
+  return (LEVER_STEPS - stepIdx) / LEVER_STEPS * LEVER_H;
+}
+
+function setLever(unit, lev, stepIdx) {
+  stepIdx = Math.max(0, Math.min(LEVER_STEPS, stepIdx));
+  if (chopState[unit][lev] === stepIdx) return;
+  chopState[unit][lev] = stepIdx;
+  const thumb = document.getElementById('lev-' + unit + '-' + lev + '-thumb');
+  const leverEl = document.getElementById('lev-' + unit + '-' + lev);
+  if (thumb) thumb.style.top = leverPos(stepIdx) + 'px';
+  if (leverEl) leverEl.classList.toggle('active', stepIdx > 0);
+}
+
+function chopInitLevers() {
+  ['k','e'].forEach(unit => {
+    ['div','skip','fold'].forEach(lev => {
+      // init thumb position
+      setLever(unit, lev, chopState[unit][lev]);
+
+      const leverEl = document.getElementById('lev-' + unit + '-' + lev);
+      if (!leverEl) return;
+
+      let startY, startStep;
+
+      let dragged = false;
+
+      function onDown(e) {
+        e.preventDefault(); e.stopPropagation();
+        dragged = false;
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        startStep = chopState[unit][lev];
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('touchmove', onMove, {passive:false});
+        window.addEventListener('touchend', onUp);
+      }
+      function onMove(e) {
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        const dy = startY - y;
+        if (Math.abs(dy) > 4) dragged = true;
+        const delta = Math.round(dy / (LEVER_H / LEVER_STEPS));
+        setLever(unit, lev, startStep + delta);
+      }
+      function onUp() {
+        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      }
+
+      leverEl.addEventListener('mousedown', onDown);
+      leverEl.addEventListener('touchstart', onDown, {passive:false});
+
+      // click on notch area = jump to position (only if not a drag)
+      leverEl.addEventListener('click', e => {
+        if (dragged) { dragged = false; return; }
+        const rect = leverEl.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+        const frac = 1 - relY / rect.height;
+        setLever(unit, lev, Math.round(frac * LEVER_STEPS));
+      });
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  BLACKHOLE OUTPUT ENGINE
+//  K → ch1-2, E → ch3-4, M → ch5-6 on BlackHole 16ch
+// ════════════════════════════════════════════════════════════
+let bhCtx = null;
+const bhOn     = { k: false, e: false, m: false };
+const bhLevels = { k: 0.8,   e: 0.8,   m: 0.8  };
+
+async function bhInit() {
+  if (bhCtx) return true;
+  try {
+    // request mic permission so Chrome reveals device labels
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    s.getTracks().forEach(t => t.stop());
+  } catch(e) {}
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const bhDevice = devices.find(d => d.kind === 'audiooutput' && /blackhole/i.test(d.label));
+  if (!bhDevice) {
+    alert('BlackHole audio device not found — make sure it is installed and enabled in System Audio.');
+    return false;
+  }
+  bhCtx = new AudioContext({ sampleRate: ctx.sampleRate });
+  await bhCtx.setSinkId(bhDevice.deviceId);
+
+  // 16-channel merger: K→ch1-2, E→ch3-4, M→ch5-6
+  const merger = bhCtx.createChannelMerger(16);
+  merger.connect(bhCtx.destination);
+
+  [
+    { dest: kBHDest, offset: 0 },
+    { dest: eBHDest, offset: 2 },
+    { dest: mBHDest, offset: 4 },
+  ].forEach(({ dest, offset }) => {
+    const src   = bhCtx.createMediaStreamSource(dest.stream);
+    const split = bhCtx.createChannelSplitter(2);
+    src.connect(split);
+    split.connect(merger, 0, offset);
+    split.connect(merger, 1, offset + 1);
+  });
+
+  return true;
+}
+
+async function bhToggle(bus) {
+  ensureCtx();
+  if (!bhCtx) {
+    const ok = await bhInit();
+    if (!ok) return;
+  }
+  bhOn[bus] = !bhOn[bus];
+  document.getElementById('bh-btn-' + bus).classList.toggle('on', bhOn[bus]);
+  const tap = { k: kBHTapGain, e: eBHTapGain, m: mBHTapGain }[bus];
+  if (tap) tap.gain.setTargetAtTime(bhOn[bus] ? bhLevels[bus] : 0, ctx.currentTime, 0.05);
+}
+
+function bhSetLevel(bus, val) {
+  bhLevels[bus] = val;
+  const dot = document.getElementById('bh-knob-dot-' + bus);
+  if (dot) dot.style.transform = `translateX(-50%) rotate(${valToDeg(val)}deg)`;
+  if (!bhOn[bus] || !ctx) return;
+  const tap = { k: kBHTapGain, e: eBHTapGain, m: mBHTapGain }[bus];
+  if (tap) tap.gain.setTargetAtTime(val, ctx.currentTime, 0.05);
+}
+
+function bhInitKnobs() {
+  makeKnobDragger('.bh-knob', bus => bhLevels[bus], bhSetLevel, 'bus');
+}
+
+// ════════════════════════════════════════════════════════════
+//  KEYBOARD → KENON ORBS
+// ════════════════════════════════════════════════════════════
+const KENON_KEYS = { 'w': 'master', 'a': 0, 's': 1, 'd': 2 };
+
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  // voice bank switching: 1-5
+  if (k >= '1' && k <= '5') { switchVoice(parseInt(k) - 1); return; }
+  if (k === 'w') { kToggleMaster(); return; }
+  const idx = KENON_KEYS[k];
+  if (idx !== undefined && idx !== 'master') kToggleLayer(idx);
+});
+
+// ════════════════════════════════════════════════════════════
+//  KEYBOARD → ECHON CHIMES
+// ════════════════════════════════════════════════════════════
+const CHIME_KEYS = { 'j':0, 'i':1, 'o':2, 'p':3, '[':4, ']':5 };
+const keysHeld = {};
+
+document.addEventListener('keydown', e => {
+  const idx = CHIME_KEYS[e.key.toLowerCase()];
+  if (idx === undefined) return;
+  if (keysHeld[e.key]) return; // ignore repeat
+  keysHeld[e.key] = true;
+  ePressDrone(idx);
+  document.getElementById('edr-'+idx).classList.add('on');
+});
+
+document.addEventListener('keyup', e => {
+  const idx = CHIME_KEYS[e.key.toLowerCase()];
+  if (idx === undefined) return;
+  keysHeld[e.key] = false;
+  eReleaseDrone(idx);
+});
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+[0,1,2].forEach(i => kUpdateIndicator(i));
+eBuildArc();
+eInitKnobs();
+initMasterKnobs();
+bhInitKnobs();
+chopInitLevers();
+</script>
+</body>
+</html>
