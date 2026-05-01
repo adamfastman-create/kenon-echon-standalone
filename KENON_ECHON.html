@@ -520,6 +520,33 @@
     text-align: center;
     padding-bottom: 6px;
   }
+
+  /* ══ ROOT NOTE SELECTOR ══ */
+  .root-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 0 7px 0;
+    background: #050505;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .root-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.02);
+    cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+    font-family: 'Space Mono', monospace;
+    font-size: 6px; letter-spacing: 0.03em;
+    color: rgba(255,255,255,0.10);
+  }
+  .root-btn.active {
+    border-color: rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.40);
+    box-shadow: 0 0 8px 2px rgba(180,200,255,0.07);
+  }
 </style>
 </head>
 <body>
@@ -533,6 +560,23 @@
     <button class="voice-btn" id="vb-2" onclick="switchVoice(2)">III</button>
     <button class="voice-btn" id="vb-3" onclick="switchVoice(3)">IV</button>
     <button class="voice-btn" id="vb-4" onclick="switchVoice(4)">V</button>
+  </div>
+
+  <!-- ROOT NOTE SELECTOR -->
+  <div class="root-strip">
+    <div class="voice-label">root</div>
+    <button class="root-btn active" id="rb-0"  onclick="switchRoot(0)">A</button>
+    <button class="root-btn"        id="rb-1"  onclick="switchRoot(1)">A#</button>
+    <button class="root-btn"        id="rb-2"  onclick="switchRoot(2)">B</button>
+    <button class="root-btn"        id="rb-3"  onclick="switchRoot(3)">C</button>
+    <button class="root-btn"        id="rb-4"  onclick="switchRoot(4)">C#</button>
+    <button class="root-btn"        id="rb-5"  onclick="switchRoot(5)">D</button>
+    <button class="root-btn"        id="rb-6"  onclick="switchRoot(6)">D#</button>
+    <button class="root-btn"        id="rb-7"  onclick="switchRoot(7)">E</button>
+    <button class="root-btn"        id="rb-8"  onclick="switchRoot(8)">F</button>
+    <button class="root-btn"        id="rb-9"  onclick="switchRoot(9)">F#</button>
+    <button class="root-btn"        id="rb-10" onclick="switchRoot(10)">G</button>
+    <button class="root-btn"        id="rb-11" onclick="switchRoot(11)">G#</button>
   </div>
   <div class="slots">
 
@@ -896,7 +940,6 @@ function buildBoardBus() {
 const VOICE_BANKS = [
   {
     name: 'Λύρα',       // Lyre
-    kRoot: 55,           // A1
     kWaveform: 'sawtooth',
     kIntervals: [1, 1.5, 2, 2.5, 3],     // layer1 shimmer ratios
     kFilterBase: 3200,
@@ -911,7 +954,6 @@ const VOICE_BANKS = [
   },
   {
     name: 'Νέφος',      // Cloud — darker, lower, Cm with triangle
-    kRoot: 65.41,        // C2
     kWaveform: 'sawtooth',
     kIntervals: [1, 1.2, 1.5, 2, 2.4],
     kFilterBase: 1800,
@@ -926,7 +968,6 @@ const VOICE_BANKS = [
   },
   {
     name: 'Φῶς',        // Light — bright major, open fifths
-    kRoot: 73.42,        // D2
     kWaveform: 'sawtooth',
     kIntervals: [1, 1.5, 2, 3, 4],
     kFilterBase: 5500,
@@ -941,7 +982,6 @@ const VOICE_BANKS = [
   },
   {
     name: 'Σκιά',       // Shadow — dissonant, tense, tritones and minor 2nds
-    kRoot: 61.74,        // B1
     kWaveform: 'sawtooth',
     kIntervals: [1, 1.06, 1.414, 1.89, 2.67],
     kFilterBase: 2400,
@@ -956,7 +996,6 @@ const VOICE_BANKS = [
   },
   {
     name: 'Κενό',       // Void — sparse, pure fifths and octaves, sine only
-    kRoot: 55,           // A1
     kWaveform: 'sine',
     kIntervals: [1, 1.5, 2, 3, 4],
     kFilterBase: 8000,
@@ -972,6 +1011,30 @@ const VOICE_BANKS = [
 ];
 
 let currentVoice = 0;
+
+const ROOT_NOTES = [
+  { name: 'A',  hz: 55.00 },
+  { name: 'A#', hz: 58.27 },
+  { name: 'B',  hz: 61.74 },
+  { name: 'C',  hz: 65.41 },
+  { name: 'C#', hz: 69.30 },
+  { name: 'D',  hz: 73.42 },
+  { name: 'D#', hz: 77.78 },
+  { name: 'E',  hz: 82.41 },
+  { name: 'F',  hz: 87.31 },
+  { name: 'F#', hz: 92.50 },
+  { name: 'G',  hz: 98.00 },
+  { name: 'G#', hz: 103.83 },
+];
+let kRootHz = 55; // default: A
+
+function switchRoot(idx) {
+  kRootHz = ROOT_NOTES[idx].hz;
+  ROOT_NOTES.forEach((_, i) => {
+    document.getElementById('rb-' + i).classList.toggle('active', i === idx);
+  });
+  kUpdatePitch();
+}
 
 function switchVoice(idx) {
   if (idx === currentVoice) return;
@@ -1259,7 +1322,7 @@ function kBuildLayer2() {
   sub.start(); lfo.start(); kFadeIn(g, 1.8); return { gain: g, oscs: [sub, lfo] };
 }
 
-function kPitchHz() { return getVoice().kRoot * Math.pow(4, kSliders[1]/100); }
+function kPitchHz() { return kRootHz * Math.pow(4, kSliders[1]/100); }
 function kFadeIn(gn, dur) { gn.gain.cancelScheduledValues(ctx.currentTime); gn.gain.setValueAtTime(0, ctx.currentTime); gn.gain.linearRampToValueAtTime(0.8, ctx.currentTime+dur); }
 
 function kToggleMaster() {
